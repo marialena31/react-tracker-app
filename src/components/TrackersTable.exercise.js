@@ -4,17 +4,19 @@ import {groupBy, diffTime} from '../helper'
 import {TrackerCategory} from './TrackerCategory'
 
 // 🐶 créé 2 props 'selectedId' et 'onSelected'
-const TrackerRow = ({tracker}) => {
+const TrackerRow = ({tracker, selectedId, onSelected}) => {
   const duration = diffTime(tracker?.starttime, tracker?.endtime)
 
   // 🐶 créé une fonction 'handleClick' qui sera déclanchée sur le 'onClick' de <tr>
   // cette fonction appelera ensuite `onSelected` avec le tracker courant
-
+const handleClick = () => {
+    onSelected(tracker)
+}
   // 🐶 gère l'affichage de la ligne selectionée en comparant 'selectedId' et 'tracker.id'
   // applique className 'selectedline' sur la ligne selectionné
   return (
     // 🐶 <tr> : n'oublie pas le 'className' et 'onClick'
-    <tr>
+    <tr onClick={handleClick} className={(selectedId === tracker.id) ? `"selectedline"` : `""`}>
       <td>{tracker.name}</td>
       <td>{tracker.starttime}</td>
       <td>{tracker.endtime}</td>
@@ -24,7 +26,7 @@ const TrackerRow = ({tracker}) => {
 }
 
 // 🐶 créé 2 props 'selectedTracker' et 'onSelectedTracker'
-const TrackersTable = ({trackers}) => {
+const TrackersTable = ({trackers, selectedTracker, onSelectedTracker}) => {
   const rows = []
   let lastCategory = ''
 
@@ -42,7 +44,7 @@ const TrackersTable = ({trackers}) => {
       // 🐶 utilise 'selectedTracker' et 'onSelectedTracker' pour passer les bons
       // props à <TrackerRow>
       // va ensuite modifier TrackerApp
-      rows.push(<TrackerRow key={tracker.id} tracker={tracker}></TrackerRow>)
+      rows.push(<TrackerRow key={tracker.id} tracker={tracker} selectedId={selectedTracker.id} onSelected={onSelectedTracker}></TrackerRow>)
       lastCategory = tracker.category
     })
   })
