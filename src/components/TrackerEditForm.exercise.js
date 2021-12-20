@@ -18,32 +18,113 @@ const reducer = (state, action) => {
     case 'edit':
       // 🐶 change les valeurs suivantes
       return {
-        // - status à 'edition'
-        // - tracker à payload
-        // - activeButtons : 👨‍✈️ voir specification hugo
-        // - activeInput : 👨‍✈️ voir specification hugo
-        // - error : null
+        status: 'edition',
+        tracker: action.payload,
+        activeButtons: {btnSave: false, btnUp: true, btnDel: true},
+        activeInput: true,
+        error: null,
       }
     case 'save':
       // 🐶 change les valeurs suivantes
       return {
-        // - reprend toutes les valeurs précedente du state (spead opérator)
-        // - status à 'saved'
-        // - activeButtons : 👨‍✈️ voir specification hugo
-        // - activeInput : 👨‍✈️ voir specification hugo
-        // - error : null
+        ...state,
+        status: 'saved',
+        activeButtons: {btnSave: false, btnUp: false, btnDel: false},
+        activeInput: false,
+        error: null,
+      }
+    case 'update':
+      // 🐶 change les valeurs suivantes
+      return {
+        status: 'saved',
+        tracker: action.payload,
+        activeButtons: {btnSave: true, btnUp: false, btnDel: false},
+        activeInput: false,
+        error: null,
+      }
+    case 'delete':
+      // 🐶 change les valeurs suivantes
+      return {
+        status: 'deleted',
+        tracker: action.payload,
+        activeButtons: {btnSave: true, btnUp: false, btnDel: false},
+        activeInput: false,
+        error: null,
+      }
+    case 'fail':
+      // 🐶 change les valeurs suivantes
+      return {
+        status: 'fail',
+        tracker: null,
+        activeButtons: {btnSave: false, btnUp: false, btnDel: false},
+        activeInput: false,
+        error: action.error,
       }
     // 🐶 continue pour 'update' 'delete' et 'fail'
 
     // 🐶 reprend tous les etats precedents et met à jour uniquement 'tracker' et error
     case 'trackerChange':
-      return {}
+      return {
+        ...state,
+        tracker: action.payload,
+        error: null,
+      }
     default:
       throw new Error('Action non supporté')
   }
 }
 
-const newTracker = () => ({
+function useEditTracker(defaultTracker) {
+  const [state, dispatch] = React.useReducer(reducer, {
+    tracker: defaultTracker,
+    error: null,
+    status: 'idle',
+    activeInput: false,
+    activeButtons: {btnSave: false, btnUp: false, btnDel: false},
+  })
+  const {tracker, error, status, activeButtons, activeInput} = state
+
+  const saveTracker = () => {
+    dispatch({type:'save'})
+  }
+
+  const setTracker = tracker => {
+    dispatch({type:'trackerChange', payload: tracker})
+  }
+
+  const editTracker = tracker => {
+    dispatch({type:'edit', payload: tracker})
+  }
+
+  const updateTracker = () => {
+    dispatch({type:'update', })
+  }
+
+  const deleteTracker = tracker => {
+    dispatch({type:'delete', payload: tracker})
+  }
+
+  const newTracker = tracker => {
+    dispatch({type:'new', payload: tracker})
+  }
+
+  return {
+    tracker,
+    error,
+    status,
+    activeButtons,
+    activeInput,
+    setTracker,
+    editTracker,
+    saveTracker,
+    updateTracker,
+    deleteTracker,
+    newTracker,
+  }
+}
+
+
+const newDefaultTracker = () => ({
   id: uuidv4(),
   category: 'Défaut',
   starttime: getDateTimeForPicker(),
@@ -52,24 +133,24 @@ const newTracker = () => ({
 })
 
 const TrackerEditForm = ({
-  selectedTracker = {...newTracker(), id: ''},
+  selectedTracker = {...newDefaultTracker(), id: ''},
   onAddTracker,
   onDeleteTracker,
   onUpdateTracker,
 }) => {
   // ⛏️ supprimer le state 'tracker'
-  const [tracker, setTracker] = React.useState(selectedTracker)
 
-  // 🐶 utilise 'React.useReducer' à la place
-  // 🤖 const [state, dispatch] = React.useReducer ...
-
-  // 🐶 initilise le reducer avec les valeurs par defaut suivantes
-  // {
-  //   tracker: selectedTracker,
-  //   error: null,
-  //   status: "idle",
-  //   activeButtons: { btnSave: false, btnUp: false, btnDel: false },
-  // }
+  const {
+    tracker,
+    activeButtons,
+    activeInput,
+    setTracker,
+    editTracker,
+    saveTracker,
+    updateTracker,
+    deleteTracker,
+    newTracker,
+  } = useEditTracker(selectedTracker)
 
   const handleTrackerName = e => {
     // ⛏️ supprime 'setTracker'
@@ -94,7 +175,8 @@ const TrackerEditForm = ({
   React.useEffect(() => {
     if (selectedTracker?.id !== '') {
       // ⛏️ supprime 'setTracker' et remplace par 'dispatch' type : 'edit'
-      setTracker(selectedTracker)
+
+      editTracker(selectedTracker)
     }
   }, [selectedTracker])
 
@@ -102,29 +184,30 @@ const TrackerEditForm = ({
     e.preventDefault()
     // 🐶 utilise 'state.tracker' au lieu de 'tracker'
     onAddTracker(tracker)
-    // 🐶 fais un 'disptach' de type 'save'
+    saveTracker()// 🐶 fais un 'disptach' de type 'save'
   }
 
   const handleUpdateTracker = () => {
     // 🐶 utilise 'state.tracker' au lieu de 'tracker'
     onUpdateTracker(tracker)
+   updateTracker()
     // 🐶 fais un 'disptach' de type 'update'
   }
 
   const handleDeleteTracker = () => {
     // 🐶 utilise 'state.tracker' au lieu de 'tracker'
     onDeleteTracker(tracker)
+    deleteTracker(newDefaultTracker())
     // 🐶 fais un 'disptach' de type 'delete' vec comme payload : newTracker()
   }
 
   const handleNewTracker = () => {
     // ⛏️ supprime 'setTracker' et remplace par 'dispatch' type : 'new'
     // avec comme payload : newTracker()
-    setTracker(newTracker())
+    newTracker(newDefaultTracker())
   }
 
   // ⛏️ supprime ce boolean
-  const disabled = tracker.id === '' ? true : false
   return (
     <>
       {/* 🐶 pour tous les champs 'disabled' utilise 'state.activeInput' ou 'state.activeButtons.xxx' */}
@@ -133,17 +216,17 @@ const TrackerEditForm = ({
           <legend>Gestion des Trackers</legend>
           <label htmlFor="trackerName">Nom du tracker : </label>
           <input
-            disabled={disabled}
-            type="text"
-            id="trackerName"
-            placeholder="tracker name..."
-            onChange={handleTrackerName}
-            value={tracker.name}
-          ></input>
+    disabled={!activeInput}
+    type="text"
+    id="trackerName"
+    placeholder="tracker name..."
+    onChange={handleTrackerName}
+    value={tracker.name}
+    />
 
           <label htmlFor="trackerDateStart">Date de début : </label>
           <input
-            disabled={disabled}
+              disabled={!activeInput}
             id="trackerDateStart"
             type="datetime-local"
             placeholder="durée..."
@@ -155,7 +238,7 @@ const TrackerEditForm = ({
           <label htmlFor="trackerDateEnd">Date de fin : </label>
 
           <input
-            disabled={disabled}
+              disabled={!activeInput}
             id="trackerDateEnd"
             type="datetime-local"
             placeholder="durée..."
@@ -167,7 +250,7 @@ const TrackerEditForm = ({
           <label>
             Categorie:
             <select
-              disabled={disabled}
+                disabled={!activeInput}
               value={tracker.category}
               onChange={handleTrackerCategory}
             >
@@ -185,15 +268,15 @@ const TrackerEditForm = ({
               value="Nouveau Tracker"
               onClick={handleNewTracker}
             ></input>
-            <input disabled={disabled} type="submit" value="Ajouter"></input>
+            <input disabled={!activeButtons.btnSave} type="submit" value="Ajouter"></input>
             <input
-              disabled={disabled}
+                disabled={!activeButtons.btnDel}
               type="button"
               value="Supprimer"
               onClick={handleDeleteTracker}
             ></input>
             <input
-              disabled={disabled}
+                disabled={!activeButtons.btnUp}
               type="button"
               value="Mettre à jour"
               onClick={handleUpdateTracker}
